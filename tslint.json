@@ -20,7 +20,8 @@
       "check-format",
       "allow-leading-underscore",
       "allow-snake-case"
-    ]
+    ],
+    "no-unused-expression": false
   },
   "rulesDirectory": []
 }
