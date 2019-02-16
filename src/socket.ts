@@ -10,10 +10,17 @@ export default class Socket {
   private static chat() {
     const chat = this.io.of('/chat');
     chat.on('connection', socket => {
-      console.log('connected');
-      socket.on('message', message => {
-        console.log(message);
-        chat.emit('message', message);
+      socket.join('global');
+      socket.on('message', ({ roomId, message }) => {
+        chat.to(roomId).emit('message', message);
+      });
+      socket.on('join', roomId => {
+        socket.join(roomId);
+        chat.to(roomId).emit('announce', `JOIN : ${socket.id}`);
+      });
+      socket.on('leave', roomId => {
+        socket.leave(roomId);
+        chat.to(roomId).emit('announce', `LEAVE : ${socket.id}`);
       });
     });
   }
