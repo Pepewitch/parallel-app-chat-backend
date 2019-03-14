@@ -32,7 +32,7 @@ app.use(urlencoded({ extended: true }));
 /**
  * allow cross origin
  */
-app.use(cors());
+// app.use(cors());
 
 /**
  * add req.session

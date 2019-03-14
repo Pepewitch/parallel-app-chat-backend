@@ -4,6 +4,6 @@ import { join } from 'path';
 /**
  * read local environment from .env file
  */
-if (fs.existsSync(join(__dirname, '../../.env'))) {
-  dotenv.config();
-}
+// if (fs.existsSync(join(__dirname, '../../.env'))) {
+//   dotenv.config();
+// }
