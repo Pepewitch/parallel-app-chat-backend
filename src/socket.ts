@@ -1,5 +1,8 @@
 import io from 'socket.io';
 import { Server } from 'http';
+import MessageModel from './model/MessageModel';
+import { IncomingMessage } from './type/message';
+import ReadModel from './model/ReadModel';
 
 export default class Socket {
   public static mount(server: Server) {
@@ -7,30 +10,46 @@ export default class Socket {
     this.chat();
   }
   private static io: io.Server;
+  private static chatIO: io.Namespace;
   private static chat() {
-    const chat = this.io.of('/chat');
-    chat.on('connection', socket => {
-      console.log(socket.handshake.query);
-      const { roomId: connectionRoomId } = socket.handshake.query;
-      if (connectionRoomId) {
-        socket.join(connectionRoomId);
-      } else {
-        socket.join('global');
-      }
-      socket.on('message', ({ roomId, message }) => {
-        console.log('message', { roomId, message, socket: socket.client.id });
-        chat.to(roomId).emit('message', message);
+    Socket.chatIO = this.io.of('/chat');
+    Socket.chatIO.on('connection', async socket => {
+      const username =
+        socket.handshake.query.username || Math.random().toFixed(5);
+      Socket.onConnection(username, socket);
+      socket.on('message', event => {
+        Socket.onMessage(username, event);
       });
       socket.on('join', roomId => {
-        console.log('join', { roomId, socket: socket.client.id });
         socket.join(roomId);
-        chat.to(roomId).emit('announce', `JOIN : ${socket.id}`);
+        Socket.chatIO.to(roomId).emit('announce', `JOIN : ${socket.id}`);
       });
       socket.on('leave', roomId => {
-        console.log('leave', { roomId, socket: socket.client.id });
         socket.leave(roomId);
-        chat.to(roomId).emit('announce', `LEAVE : ${socket.id}`);
+        Socket.chatIO.to(roomId).emit('announce', `LEAVE : ${socket.id}`);
       });
     });
+  }
+
+  private static async onConnection(username: string, socket: io.Socket) {
+    console.log('on connection : ', username);
+    const roomId = socket.handshake.query.roomId || 'global';
+    socket.join(roomId);
+    const [messages, read] = await Promise.all([
+      MessageModel.getMessages(roomId),
+      ReadModel.read(username, roomId),
+    ]);
+    socket.emit('initial', { messages, read });
+  }
+
+  private static async onMessage(username: string, event: IncomingMessage) {
+    const { roomId, message } = event;
+    const addedMessage = await MessageModel.addMessage(
+      username,
+      roomId,
+      message.text,
+    );
+    message.timestamp = addedMessage.insertedId.getTimestamp();
+    Socket.chatIO.to(roomId).emit('message', message);
   }
 }

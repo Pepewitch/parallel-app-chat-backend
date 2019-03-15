@@ -1,4 +1,3 @@
-import './config';
 import { join } from 'path';
 import express from 'express';
 import morgan from 'morgan';
@@ -7,7 +6,6 @@ import cors from 'cors';
 import session from 'express-session';
 import helmet from 'helmet';
 import router from './router';
-import 'reflect-metadata';
 
 const app = express();
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import MessageModel from '../model/MessageModel';
 
 const router = Router();
 
