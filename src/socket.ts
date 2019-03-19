@@ -14,9 +14,13 @@ export default class Socket {
   private static chat() {
     Socket.chatIO = this.io.of('/chat');
     Socket.chatIO.on('connection', async socket => {
+      console.log('connection :', socket.id);
+      socket.emit('connect');
       const username =
         socket.handshake.query.username || Math.random().toFixed(5);
-      Socket.onConnection(username, socket);
+      socket.on('initialConnection', ({ roomId }) => {
+        Socket.onConnection(username, roomId, socket);
+      });
       socket.on('message', event => {
         Socket.onMessage(username, event);
       });
@@ -28,12 +32,21 @@ export default class Socket {
         socket.leave(roomId);
         Socket.chatIO.to(roomId).emit('announce', `LEAVE : ${socket.id}`);
       });
+      socket.on('read', async (roomId: string) => {
+        const read = await ReadModel.read(username, roomId);
+        Socket.chatIO
+          .to(roomId)
+          .emit('updateRead', { roomId, date: read.lastRead, username });
+      });
     });
   }
 
-  private static async onConnection(username: string, socket: io.Socket) {
+  private static async onConnection(
+    username: string,
+    roomId: string,
+    socket: io.Socket,
+  ) {
     console.log('on connection : ', username);
-    const roomId = socket.handshake.query.roomId || 'global';
     socket.join(roomId);
     const [messages, read] = await Promise.all([
       MessageModel.getMessages(roomId),
