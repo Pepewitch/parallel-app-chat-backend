@@ -52,7 +52,7 @@ export default class Socket {
       MessageModel.getMessages(roomId),
       ReadModel.read(username, roomId),
     ]);
-    socket.emit('initial', { messages, read });
+    socket.emit('initial', { messages, read, roomId });
   }
 
   private static async onMessage(username: string, event: IncomingMessage) {
